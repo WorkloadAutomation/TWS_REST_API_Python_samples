@@ -6,53 +6,39 @@
 # * Trademark of HCL Technologies Limited
 #############################################################################
 
-import requests
-import json
-import sys
+import waconn
+import argparse
 
-host = ''
-user = ''
-pwd = ''
-jobName = ''
-workstationName = ''
-taskString = ''
-port = '31116'
+parser = argparse.ArgumentParser(description='Add a job in to the model')
+parser.add_argument('-j','--jobname', help='job name', required=True, metavar="JOB_NAME")
+parser.add_argument('-u','--twsuser', help='TWS user', required=True, metavar="TWS_USER")
+parser.add_argument('-w','--workstationName', help='TWS workstation name', required=True, metavar="WORKSTATION_NAME")
+parser.add_argument('-t','--taskString', help='JOB task string', required=True, metavar="TASK_STRING")
 
+args = parser.parse_args()
+conn = waconn.WAConn('waconn.ini','/twsd')
 
-if len(sys.argv) != 7:
-	print ('Usage: '+sys.argv[0]+' <tws_host> <tws_user> <password> <job_name> <workstation_name> <task_string>')
-	sys.exit(2)
-
-host = sys.argv[1]
-user = sys.argv[2]
-pwd = sys.argv[3]
-jobName = sys.argv[4]
-workstationName = sys.argv[5]
-taskString = sys.argv[6]
-
-url = 'https://'+host+':'+port+'/twsd/model/jobdefinition'
+url = '/model/jobdefinition'
 filters = {
 		"header": {
 			"jobDefinitionKey": {
-				"name": jobName,
-				"workstationName":workstationName
+				"name": args.jobname,
+				"workstationName":args.workstationName
 			},
 			"description":"Added by REST API.",
 			"taskType": "UNIX",
-			"userLogin": user
+			"userLogin": args.twsuser
 		},
-	"taskString": taskString,
+	"taskString": args.taskString,
 	"recoveryOption": "STOP"
 		}
 
 
 headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
 
-print ('Connecting to '+url)
-resp = requests.post(url, json=filters, headers=headers, auth=(user,pwd), verify=False)
+
+resp = conn.post(url, json=filters, headers=headers)
 
 r = resp.json()
-print(json.dumps(r, indent=2))
 
-if resp.status_code != 201:
-	raise (BaseException('POST {} : {}'.format(url,resp.status_code)))
+print('The command "add" completed successfully on object "'+r['id']+'"')

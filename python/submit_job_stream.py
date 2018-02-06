@@ -6,49 +6,32 @@
 # * Trademark of HCL Technologies Limited
 #############################################################################
 
-import requests
+import waconn
+import argparse
 import datetime
-import json
-import sys
 
-host = ''
-user = ''
-pwd = ''
-jsName = ''
-workStationName = ''
-port = '31116'
-# eg: 2018-12-23T00:00:00
-validFrom = ''
-validTo = ''
-jsAlias = ''
+parser = argparse.ArgumentParser(description='Add a job in to the model')
+parser.add_argument('-j','--jsName', help='job stream', required=True, metavar="JOB_STREAM")
+parser.add_argument('-w','--workstationName', help='TWS workstation name', required=True, metavar="WORKSTATION_NAME")
+parser.add_argument('-ja','--jsAlias', help='job stream alias', required=False, metavar="JS_ALIAS")
+parser.add_argument('-vf','--validFrom', help='valid from', required=False, metavar="VALID_FROM")
+parser.add_argument('-vt','--validTo', help='valid to', required=False, metavar="VALID_TO")
 
-
-if len(sys.argv) < 6 or len(sys.argv) > 7:
-	print ('Usage: '+sys.argv[0]+' <tws_host> <tws_user> <password> <js_name> <workstation_name> [<js_alias>]')
-	sys.exit(2)
-
-
-host = sys.argv[1]
-user = sys.argv[2]
-pwd = sys.argv[3]
-jsName = sys.argv[4]
-workStationName = sys.argv[5]
-
-if len(sys.argv) >= 7:
-    jsAlias = sys.argv[6]
+args = parser.parse_args()
+conn = waconn.WAConn('waconn.ini','/twsd')
 
 
 
 # first rest call to get the js id
 
-url = 'https://'+host+':'+port+'/twsd/model/jobstream/header/query'
+url = '/model/jobstream/header/query'
 filters = {
 		"filters": {
 			"jobstreamFilter": {
-				"jobStreamName": jsName,
-				"workstationName":workStationName,
-				"validFrom": validFrom,
-				"validTo": validTo
+				"jobStreamName": args.jsName,
+				"workstationName":args.workstationName,
+				"validFrom": args.validFrom,
+				"validTo": args.validTo
 			}
 		}
 	}
@@ -56,13 +39,7 @@ filters = {
 headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'How-Many': '1'}
 
 print ('Connecting to '+url)
-resp = requests.post(url, json=filters, headers=headers, auth=(user,pwd), verify=False)
-
-
-
-if resp.status_code != 200:
-    # This means something went wrong.
-	raise (BaseException('POST {} : {}'.format(url, resp.status_code)))
+resp = conn.post(url, json=filters, headers=headers)
 
 r = resp.json()
 if len(r) == 0:
@@ -77,21 +54,20 @@ print("the js id is: " + jsId)
 # now we can submit the js
 now = datetime.datetime.utcnow().isoformat()
 
-url = 'https://' + host +':' + port +'/twsd/plan/current/jobstream/' + jsId + '/action/submit_jobstream'
+url = '/plan/current/jobstream/' + jsId + '/action/submit_jobstream'
 
 filters = {
 		"inputArrivalTime": now,
-		"alias": jsAlias
+		"alias": args.jsAlias
 	}
 
 headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
 
 print ('Connecting to '+url)
-resp = requests.post(url, json=filters, headers=headers, auth=(user,pwd), verify=False)
+resp = conn.post(url, json=filters, headers=headers)
 
+#print(json.dumps(resp.json(), indent=2))
+r = resp.json()
 
-if resp.status_code != 200:
-    # This means something went wrong.
-	raise (BaseException('POST {} : {}'.format(url, resp.status_code)))
-
-print(json.dumps(resp.json(), indent=2))
+for js in r:
+	print ('Submitted '+js)
