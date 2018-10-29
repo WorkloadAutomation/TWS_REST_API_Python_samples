@@ -61,15 +61,15 @@ class WAConn:
 					self.hostIdx=0
 				retries+=1
 
-		if not resp:
-			raise StandardError('Unable to connect to configured host',resp.content)
-
 		print 'Result: %d' % resp.status_code
-		if not (resp.status_code == 200 or resp.status_code == 201 or resp.status_code == 202):
-			print resp
-			# This means something went wrong.
-			print (resp.status_code)
-			raise StandardError('%s %s : %s' % (method, url, resp.status_code))
+		if not resp.ok:
+			json = resp.json()
+			if json and json['messages']:
+				print "Error from server:"
+				for m in json['messages']:
+					print " %s" % (m)
+		else:
+			resp.raise_for_status()
 			
 		return resp
 

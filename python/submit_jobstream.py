@@ -13,7 +13,7 @@ import waconn
 import argparse
 import datetime
 
-parser = argparse.ArgumentParser(description='Add a job in to the model')
+parser = argparse.ArgumentParser(description='Submit a job stream to the plan')
 parser.add_argument('-j','--jsName', help='job stream', required=True, metavar="JOB_STREAM")
 parser.add_argument('-w','--workstationName', help='job stream workstation name', required=True, metavar="WORKSTATION_NAME")
 parser.add_argument('-a','--alias', help='job stream alias', required=False, metavar="JS_ALIAS")
@@ -87,7 +87,8 @@ if args.alias:
 # now we can submit the js
 print "submit parameters: " +str(submit)
 resp = conn.post('/plan/current/jobstream/' + jsId + '/action/submit_jobstream', json=submit)
-
+print resp
+print resp.headers
 r = resp.json()
 
 for js in r:
