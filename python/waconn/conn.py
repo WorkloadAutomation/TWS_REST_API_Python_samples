@@ -31,7 +31,7 @@ class WAConn:
 	def __str__(self):
 		return 'WAConn (%s, %s)' % (self.config, self.prefix)
 		
-	def request(self, method, uri, headers=None, params=None, json=None):
+	def request(self, method, uri, headers=None, params=None, json=None, data=None):
 
 		headers = headers or {}
 		if 'Content-Type' not in headers:
@@ -52,7 +52,7 @@ class WAConn:
 			url = hosts[self.hostIdx] + self.prefix + uri
 			print 'Connecting to %s for %s' % (url, method)
 			try:
-				resp = requests.request(method, url, json=json, headers=headers, auth=(self.config['user'],self.config['pwd']), verify=self.config['verify'])
+				resp = requests.request(method, url, json=json, data=data, headers=headers, auth=(self.config['user'],self.config['pwd']), verify=self.config['verify'])
 			except requests.exceptions.ConnectionError, error:
 				print 'Connection error: '+ str(error)
 				retry = True
@@ -73,8 +73,8 @@ class WAConn:
 			
 		return resp
 
-	def put(self, uri, json=None, headers=None):
-		return self.request('PUT', uri, headers=headers, json=json)
+	def put(self, uri, json=None, data=None, headers=None):
+		return self.request('PUT', uri, headers=headers, json=json, data=data)
 
 	def post(self, uri, json=None, headers=None):
 		return self.request('POST', uri, headers=headers, json=json)
